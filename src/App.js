@@ -17,10 +17,10 @@ function App() {
         >
           Learn React
         </a>
-        
-        <a>
+
+        <p>
           "Hello word" "Avner Zerdoun"
-        </a>
+        </p>
       </header>
     </div>
   );
