@@ -40,4 +40,4 @@ jobs:
 
       # Étape 7 : Déployer sur GitHub Pages
       - name: Deploy to GitHub Pages
-        run:npm run deploy
+      run: npm run deploy
