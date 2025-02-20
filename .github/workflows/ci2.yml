@@ -1,4 +1,4 @@
-name: Deploy to AWS
+name: Deploy to AWS (Dev)
 
 on:
   push:
@@ -10,69 +10,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Vérifier le code source
+      # 1️⃣ Vérifier et récupérer le code source
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Demande avant mise à jour des paquets
-      - name: Confirm package update and OpenSSH installation
-        run: echo "⚠️ Prêt à mettre à jour les paquets et installer OpenSSH ? (Oui/Non)"
-
-      # 2️⃣ Mettre à jour les paquets et installer OpenSSH
-      - name: Update packages and install OpenSSH
+      # 2️⃣ Installer le client SSH
+      - name: Install SSH client
         run: sudo apt-get update && sudo apt-get install -y openssh-client
 
-      # Demande avant configuration de la clé SSH
-      - name: Confirm SSH Key setup
-        run: echo "⚠️ Prêt à configurer la clé SSH ? (Oui/Non)"
-
-      # 3️⃣ Créer le répertoire .ssh et ajouter la clé privée
+      # 3️⃣ Configurer la clé SSH
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 --decode > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      # Demande avant déploiement
-      - name: Confirm AWS deployment
-        run: echo "⚠️ Prêt à arrêter, supprimer et redéployer le conteneur ? (Oui/Non)"
+      # 4️⃣ Tester la connexion SSH
+      - name: Test SSH Connection
+        run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "echo ✅ Connexion SSH réussie !"
 
-      # 4️⃣ Se connecter au serveur AWS et effectuer le déploiement
-      - name: Deploy application
+      # 5️⃣ Déployer l'application sur AWS
+      - name: Deploy to AWS
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<EOF
+            set -e  # Stopper l'exécution en cas d'erreur
+
+            echo "📂 Déplacement vers le répertoire de travail..."
             cd ${{ secrets.WORK_DIR }}
 
-            # Down le conteneur Docker
-            echo "🛑 Arrêt du conteneur Docker..."
-            docker compose down || docker stop mon_conteneur && docker rm mon_conteneur
+            # Vérifier qu'on est bien dans le bon répertoire
+            pwd
+            ls -la
 
-            # Supprimer l'image Docker
-            echo "🗑 Suppression de l'image Docker..."
-            docker rmi mon_image || echo "Aucune image à supprimer"
-
-            # Pull la dernière version du projet
-            echo "🔄 Mise à jour du projet..."
+            echo "🔄 Passage sur la branche main et pull du projet..."
+            git checkout main
             git pull origin main
 
-            # Rebuild et redémarrage du conteneur
-            echo "🚀 Reconstruction et démarrage du conteneur..."
-            docker compose up --build -d
+            # Vérifier la présence du fichier docker-compose.yml
+            if [ ! -f "docker-compose.yml" ]; then
+              echo "❌ Erreur : Fichier docker-compose.yml introuvable."
+              exit 1
+            fi
 
-            # Afficher les logs pour vérification
-            echo "📜 Logs du conteneur en cours..."
-            docker logs -f mon_conteneur
+            echo "🛑 Arrêt et suppression des anciens conteneurs..."
+            docker-compose down
 
-            exit
+            echo "🧹 Nettoyage des anciens conteneurs et images..."
+            docker system prune -af
+
+            echo "🚀 Reconstruction et démarrage des nouveaux conteneurs..."
+            docker-compose up --build -d
+
+            echo "✅ Déploiement terminé avec succès !"
           EOF
 
-      # Demande avant suppression du répertoire .ssh
-      - name: Confirm SSH Key cleanup
-        run: echo "⚠️ Prêt à supprimer le répertoire .ssh pour la sécurité ? (Oui/Non)"
-
-      # 5️⃣ Supprimer le répertoire .ssh pour la sécurité
-      - name: Cleanup SSH Keys
+      # 6️⃣ Nettoyage des clés SSH pour la sécurité
+      - name: Clean up SSH key
         run: rm -rf ~/.ssh
+
 
 
