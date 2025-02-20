@@ -14,17 +14,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Demande avant mise à jour des paquets
-      - name: Confirm package update and OpenSSH installation
-        run: echo "⚠️ Prêt à mettre à jour les paquets et installer OpenSSH ? (Oui/Non)"
-
       # 2️⃣ Mettre à jour les paquets et installer OpenSSH
       - name: Update packages and install OpenSSH
         run: sudo apt-get update && sudo apt-get install -y openssh-client
-
-      # Demande avant configuration de la clé SSH
-      - name: Confirm SSH Key setup
-        run: echo "⚠️ Prêt à configurer la clé SSH ? (Oui/Non)"
 
       # 3️⃣ Créer le répertoire .ssh et ajouter la clé privée
       - name: Setup SSH Key
@@ -33,10 +25,6 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 --decode > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
-      # Demande avant connexion au serveur AWS et git pull
-      - name: Confirm AWS deployment
-        run: echo "⚠️ Prêt à se connecter au serveur AWS et pull le projet ? (Oui/Non)"
 
       # 4️⃣ Se connecter au serveur AWS et effectuer un git pull
       - name: Deploy application
@@ -47,11 +35,6 @@ jobs:
             exit
           EOF
 
-      # Demande avant suppression du répertoire .ssh
-      - name: Confirm SSH Key cleanup
-        run: echo "⚠️ Prêt à supprimer le répertoire .ssh pour la sécurité ? (Oui/Non)"
-
       # 5️⃣ Supprimer le répertoire .ssh pour la sécurité
       - name: Cleanup SSH Keys
         run: rm -rf ~/.ssh
-
