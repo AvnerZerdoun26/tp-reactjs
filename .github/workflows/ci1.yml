@@ -3,7 +3,7 @@
 # on:
 #   push:
 #     branches:
-#       - main
+#       - autre
 
 # jobs:
 #   build-deploy:
