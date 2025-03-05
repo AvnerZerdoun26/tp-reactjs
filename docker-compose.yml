@@ -31,3 +31,36 @@ services:
 
 volumes:
   mysql_data:
+  
+  traefik:
+    image: "traefik:v2.10"
+    container_name: "traefik"
+    restart: always
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+      - "8080:8080"  # Dashboard Traefik
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.toml:/etc/traefik/traefik.toml"
+      - "./acme.json:/acme.json"
+    environment:
+      - CF_API_EMAIL=your-cloudflare-email@example.com
+      - CF_API_KEY=your-cloudflare-api-key
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`traefik.example.com`)"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
+
+  app:
+    image: "myapp:latest"
+    container_name: "myapp"
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.myapp.rule=Host(`avner.soudry-ort.online`)"
+      - "traefik.http.routers.myapp.entrypoints=websecure"
+      - "traefik.http.routers.myapp.tls.certresolver=letsencrypt"
+      - "traefik.http.services.myapp.loadbalancer.server.port=8000"
