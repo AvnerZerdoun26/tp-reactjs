@@ -20,11 +20,14 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword   # Mot de passe root
-      MYSQL_DATABASE: BDD_tp             # Nom de la base de données
+      MYSQL_DATABASE: football_db             # Nom de la base de données
       MYSQL_USER: user                    # Utilisateur
       MYSQL_PASSWORD: userpassword        # Mot de passe de l'utilisateur
     ports:
       - "3306:3306"  # Expose le port MySQL
     volumes:
-      - ./mysql_data:/var/lib/mysql       # Pour persister les données
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Fichier SQL d'initialisation
+      - mysql_data:/var/lib/mysql       # Pour persister les données
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Fichier SQL d'initialisatio
+
+volumes:
+  mysql_data:
